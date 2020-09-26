@@ -22,7 +22,7 @@
         {{range .Files}}
             <tr>
                 <td>File</td>
-                <td>{{.Path}}</td>
+                <td><a href="{{.Path}}.html">{{.Path}}</a></td>
                 <td style="text-align:right">{{.Coverage}}%</td>
             </tr>
         {{end}}

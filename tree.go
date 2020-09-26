@@ -115,9 +115,15 @@ type coverage struct {
 	Coverage float64
 }
 
+type fileData struct {
+	Path     string
+	Title    string
+	Coverage float64
+}
+
 const base = "out"
 
-func (f *folder) html(p string, t *template.Template) {
+func (f *folder) html(p string, list *template.Template, detail *template.Template) {
 	covered, total := f.stats()
 	folders := make([]coverage, 0)
 	for key, val := range f.subFolders {
@@ -143,9 +149,19 @@ func (f *folder) html(p string, t *template.Template) {
 	}
 	os.MkdirAll(d.Path, os.ModePerm)
 	file, _ := os.Create(path.Join(d.Path, "index.html"))
-	t.Execute(file, d)
+	err := list.Execute(file, d)
+
+	if err != nil {
+		panic(err)
+	}
 
 	for key, val := range f.subFolders {
-		val.html(path.Join(p, key), t)
+		val.html(path.Join(p, key), list, detail)
+	}
+
+	for key, file := range f.subFiles {
+		p := path.Join(d.Path, key+".html")
+		detailFile, _ := os.Create(p)
+		detail.Execute(detailFile, fileData{Path: key, Title: key, Coverage: file.percentage * 100})
 	}
 }

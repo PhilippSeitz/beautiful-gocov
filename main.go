@@ -15,7 +15,12 @@ func main() {
 
 	root := tree.subFolders["stackit.de"]
 
-	t, err := template.ParseFiles("templates/index.html", "templates/list.html")
+	l := template.Must(template.ParseFiles("templates/index.html", "templates/list.html"))
+	d := template.Must(template.ParseFiles("templates/index.html", "templates/detail.html"))
+	if err != nil {
+		panic(err)
+	}
+
 	root.print(0)
-	root.html("", t)
+	root.html("", l, d)
 }
