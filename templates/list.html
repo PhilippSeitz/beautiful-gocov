@@ -1,0 +1,31 @@
+{{define "title"}}{{.Title}}{{end}}
+
+{{define "content"}}
+    <h1>{{.Title}} - {{.Coverage}}%</h1>
+    <p>{{.Path}}</p>
+    <table width="700">
+        <thead>
+        <tr>
+            <th>Type</th>
+            <th>Path</th>
+            <th>Coverage</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .Folders}}
+            <tr>
+                <td>Folder</td>
+                <td><a href="{{.Path}}/index.html">{{.Path}}</a></td>
+                <td style="text-align:right">{{.Coverage}}%</td>
+            </tr>
+        {{end}}
+        {{range .Files}}
+            <tr>
+                <td>File</td>
+                <td>{{.Path}}</td>
+                <td style="text-align:right">{{.Coverage}}%</td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+{{end}}

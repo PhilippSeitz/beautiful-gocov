@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"golang.org/x/tools/cover"
+	"html/template"
+	"os"
+	"path"
 	"strings"
 )
 
@@ -29,7 +32,6 @@ func buildTree(source string) (*folder, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(profiles)
 	for _, profile := range profiles {
 		folders := strings.Split(profile.FileName, "/")
 		x := root
@@ -76,7 +78,7 @@ func buildTree(source string) (*folder, error) {
 func (f *folder) print(depth int) {
 	margin := strings.Repeat("  ", depth)
 	covered, total := f.stats()
-	fp := fmt.Sprintf("%f",  float64(covered) / float64(total) *100)
+	fp := fmt.Sprintf("%f", float64(covered)/float64(total)*100)
 	fmt.Println(margin + "+--" + f.name + ": " + fp)
 	for key, val := range f.subFiles {
 		sp := fmt.Sprintf("%f", val.percentage*100)
@@ -87,8 +89,7 @@ func (f *folder) print(depth int) {
 	}
 }
 
-func (f *folder) stats() (int64, int64) {
-	var covered, total int64
+func (f *folder) stats() (covered, total int64) {
 	for _, val := range f.subFiles {
 		total = total + val.total
 		covered = covered + val.covered
@@ -99,4 +100,52 @@ func (f *folder) stats() (int64, int64) {
 		covered = covered + fCovered
 	}
 	return covered, total
+}
+
+type data struct {
+	Title    string
+	Path     string
+	Coverage float64
+	Folders  []coverage
+	Files    []coverage
+}
+
+type coverage struct {
+	Path     string
+	Coverage float64
+}
+
+const base = "out"
+
+func (f *folder) html(p string, t *template.Template) {
+	covered, total := f.stats()
+	folders := make([]coverage, 0)
+	for key, val := range f.subFolders {
+		covered, total := val.stats()
+		folders = append(folders, coverage{
+			Path:     key,
+			Coverage: float64(covered) / float64(total) * 100,
+		})
+	}
+	files := make([]coverage, 0)
+	for key, val := range f.subFiles {
+		files = append(files, coverage{
+			Path:     key,
+			Coverage: val.percentage * 100,
+		})
+	}
+	d := data{
+		Title:    f.name,
+		Path:     path.Join(base, p),
+		Coverage: float64(covered) / float64(total) * 100,
+		Folders:  folders,
+		Files:    files,
+	}
+	os.MkdirAll(d.Path, os.ModePerm)
+	file, _ := os.Create(path.Join(d.Path, "index.html"))
+	t.Execute(file, d)
+
+	for key, val := range f.subFolders {
+		val.html(path.Join(p, key), t)
+	}
 }

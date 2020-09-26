@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
 	"os"
 )
 
@@ -13,7 +13,9 @@ func main() {
 		panic(err)
 	}
 
-	root := tree.subFolders["stackit.de"].subFolders["permission"]
-	fmt.Println(root)
+	root := tree.subFolders["stackit.de"]
+
+	t, err := template.ParseFiles("templates/index.html", "templates/list.html")
 	root.print(0)
+	root.html("", t)
 }
