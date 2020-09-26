@@ -1,26 +1,26 @@
 package main
 
 import (
-	"html/template"
+	"github.com/PhilippSeitz/beautiful-gocov/report/html"
+	"github.com/PhilippSeitz/beautiful-gocov/tree"
 	"os"
 )
 
 func main() {
 	var file = os.Getenv("FILE")
-	var _ = os.Getenv("DIR")
-	tree, err := buildTree(file)
+	var dir = os.Getenv("DIR")
+	var mod = os.Getenv("MOD")
+	t, err := tree.BuildTree(file, dir, mod)
 	if err != nil {
 		panic(err)
 	}
 
-	root := tree.subFolders["stackit.de"]
+	root := t.Folders["stackit.de"]
+	root.Print(0)
 
-	l := template.Must(template.ParseFiles("templates/index.html", "templates/list.html"))
-	d := template.Must(template.ParseFiles("templates/index.html", "templates/detail.html"))
+	err = html.HTML(root)
 	if err != nil {
 		panic(err)
 	}
 
-	root.print(0)
-	root.html("", l, d)
 }
