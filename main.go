@@ -16,6 +16,4 @@ func main() {
 	root := tree.subFolders["stackit.de"].subFolders["permission"]
 	fmt.Println(root)
 	root.print(0)
-
-
 }

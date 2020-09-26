@@ -1,57 +1,34 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strconv"
+	"golang.org/x/tools/cover"
 	"strings"
 )
 
-type field struct {
-	numberOfStatements int
-	count              int
-	position           string
-}
-
 type folder struct {
 	name       string
-	subFiles   map[string][]*field
+	subFiles   map[string][]cover.ProfileBlock
 	subFolders map[string]*folder
 }
 
 func buildTree(source string) (*folder, error) {
-	file, err := os.Open(source)
+	root := &folder{
+		subFiles:   make(map[string][]cover.ProfileBlock, 0),
+		subFolders: make(map[string]*folder, 0),
+	}
+
+	profiles, err := cover.ParseProfiles(source)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	scanner.Scan()
-	root := &folder{
-		subFiles:   make(map[string][]*field, 0),
-		subFolders: make(map[string]*folder, 0),
-	}
-	for scanner.Scan() {
-		line := strings.Split(scanner.Text(), " ")
-		position := strings.Split(line[0], ":")
-		file := position[0]
-		numberOfStatements, err := strconv.Atoi(line[1])
-		if err != nil {
-			return nil, err
-		}
-		count, _ := strconv.Atoi(line[2])
-
-		folders := strings.Split(file, "/")
+	fmt.Println(profiles)
+	for _, profile := range profiles {
+		folders := strings.Split(profile.FileName, "/")
 		x := root
 		for i, f := range folders {
 			if len(folders)-1 == i {
-				x.subFiles[f] = append(x.subFiles[f], &field{
-					numberOfStatements: numberOfStatements,
-					count:              count,
-					position:           position[1],
-				})
+				x.subFiles[f] = profile.Blocks
 				break
 			}
 			if val, ok := x.subFolders[f]; ok {
@@ -59,17 +36,16 @@ func buildTree(source string) (*folder, error) {
 			} else {
 				t := &folder{
 					name:       f,
-					subFiles:   make(map[string][]*field, 0),
+					subFiles:   make(map[string][]cover.ProfileBlock, 0),
 					subFolders: make(map[string]*folder, 0),
 				}
 				x.subFolders[f] = t
 				x = t
 			}
 		}
-
 	}
 
-	return root, scanner.Err()
+	return root, nil
 }
 
 func (f *folder) print(depth int) {
