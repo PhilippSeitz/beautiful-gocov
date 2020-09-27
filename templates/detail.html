@@ -1,8 +1,28 @@
 {{define "title"}}{{.Title}}{{end}}
 
 {{define "content"}}
+    <style>
+        {{range $i, $val := .Covered}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
+            border-right: 10px solid green;
+        }
+
+        {{range $i, $val := .Uncovered}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
+            border-right: 10px solid red;
+        }
+
+        {{range $i, $val := .Partly}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
+            border-right: 10px solid yellow;
+        }
+
+        body {
+            background-color: #272822;
+            color: white;
+        }
+    </style>
     <h1>{{.Title}} - {{printf "%.1f"  .Coverage}}%</h1>
     <p>{{.Path}}</p>
 
-    {{.Code}}
+    <div style="width:900px; margin: 0 auto">
+        {{.Code}}
+    </div>
 {{end}}

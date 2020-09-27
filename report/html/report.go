@@ -6,6 +6,7 @@ import (
 	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
+	"golang.org/x/tools/cover"
 	"html/template"
 	"io/ioutil"
 	"os"
@@ -37,7 +38,8 @@ type data struct {
 
 type fileData struct {
 	baseData
-	Code template.HTML
+	Code                       template.HTML
+	Covered, Uncovered, Partly []int
 }
 
 const base = "out"
@@ -104,20 +106,6 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 	p := path.Join(base, strings.Join(parents, "/"), name+".html")
 	detailFile, _ := os.Create(p)
-	//codeFile, err := os.Open(f.Path)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//defer codeFile.Close()
-	//
-	//scanner := bufio.NewScanner(codeFile)
-	//lines := make([]string, 0)
-	//for scanner.Scan() {
-	//	lines = append(lines, scanner.Text())
-	//}
-	//if err := scanner.Err(); err != nil {
-	//	panic(err)
-	//}
 	code, err := ioutil.ReadFile(f.Path)
 	if err != nil {
 		panic(err)
@@ -128,24 +116,72 @@ func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 	formatter := html.New(
 		html.WithLineNumbers(true),
 		html.LineNumbersInTable(true),
-		html.LinkableLineNumbers(true, "test"),
+		html.LinkableLineNumbers(true, "line"),
 	)
 	it, err := lexers.Get("go").Tokenise(nil, string(code))
 	if err != nil {
 		panic(err)
 	}
-	err = formatter.Format(buf, styles.Emacs, it)
+	err = formatter.Format(buf, styles.Monokai, it)
 	if err != nil {
 		panic(err)
 	}
 
+	covered, uncovered, partly := convertBlocksToLine(f.Blocks)
 	err = r.detailTemplate.Execute(detailFile, fileData{
 		baseData: baseData{
 			Path:     name,
 			Title:    name,
 			Coverage: f.Coverage() * 100},
-		Code: template.HTML(buf.String())})
+		Code:      template.HTML(buf.String()),
+		Covered:   covered,
+		Uncovered: uncovered,
+		Partly:    partly,
+	})
+
 	if err != nil {
 		panic(err)
 	}
+}
+
+func convertBlocksToLine(blocks []cover.ProfileBlock) (covered []int, uncovered []int, partly []int) {
+	cm := make(map[int]bool)
+	um := make(map[int]bool)
+	pm := make(map[int]bool)
+
+	covered = make([]int, 0)
+	uncovered = make([]int, 0)
+	partly = make([]int, 0)
+
+	for _, b := range blocks {
+		for i := b.StartLine; i <= b.EndLine; i++ {
+			if b.Count > 0 {
+				cm[i] = true
+			} else {
+				um[i] = true
+			}
+		}
+	}
+
+	for key := range cm {
+		if _, ok := um[key]; ok {
+			pm[key] = true
+		} else {
+			covered = append(covered, key)
+		}
+	}
+
+	for key := range um {
+		if _, ok := cm[key]; ok {
+			pm[key] = true
+		} else {
+			uncovered = append(uncovered, key)
+		}
+	}
+
+	for key := range pm {
+		partly = append(partly, key)
+	}
+
+	return
 }
