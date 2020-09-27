@@ -1,8 +1,13 @@
 package html
 
 import (
+	"bytes"
 	"github.com/PhilippSeitz/beautiful-gocov/tree"
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"html/template"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -13,23 +18,26 @@ type reporter struct {
 	detailTemplate *template.Template
 }
 
-type data struct {
-	Title    string
+type coverageChild struct {
 	Path     string
 	Coverage float64
-	Folders  []coverage
-	Files    []coverage
 }
 
-type coverage struct {
+type baseData struct {
 	Path     string
 	Coverage float64
+	Title    string
+}
+
+type data struct {
+	baseData
+	Folders []coverageChild
+	Files   []coverageChild
 }
 
 type fileData struct {
-	Path     string
-	Title    string
-	Coverage float64
+	baseData
+	Code template.HTML
 }
 
 const base = "out"
@@ -55,28 +63,30 @@ func HTML(f *tree.Folder) error {
 }
 
 func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
-	folders := make([]coverage, 0)
+	folders := make([]coverageChild, 0)
 	for key, val := range f.Folders {
-		folders = append(folders, coverage{
+		folders = append(folders, coverageChild{
 			Path:     key,
 			Coverage: val.Coverage() * 100,
 		})
 	}
 
-	files := make([]coverage, 0)
+	files := make([]coverageChild, 0)
 	for key, val := range f.Files {
-		files = append(files, coverage{
+		files = append(files, coverageChild{
 			Path:     key,
 			Coverage: val.Coverage() * 100,
 		})
 	}
 
 	d := data{
-		Title:    f.Name,
-		Path:     path.Join(base, strings.Join(parents, "/"), f.Name),
-		Coverage: f.Coverage() * 100,
-		Folders:  folders,
-		Files:    files,
+		baseData: baseData{
+			Path:     path.Join(base, strings.Join(parents, "/"), f.Name),
+			Coverage: f.Coverage() * 100,
+			Title:    f.Name,
+		},
+		Folders: folders,
+		Files:   files,
 	}
 
 	os.MkdirAll(d.Path, os.ModePerm)
@@ -87,10 +97,54 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 	}
 
 	for key, file := range f.Files {
-		p := path.Join(d.Path, key+".html")
-		detailFile, _ := os.Create(p)
-		r.detailTemplate.Execute(detailFile, fileData{Path: key, Title: key, Coverage: file.Coverage() * 100})
+		r.renderFile(file, key, append(parents, f.Name))
 	}
+}
+
+func (r *reporter) renderFile(f tree.File, name string, parents []string) {
+	p := path.Join(base, strings.Join(parents, "/"), name+".html")
+	detailFile, _ := os.Create(p)
+	//codeFile, err := os.Open(f.Path)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer codeFile.Close()
+	//
+	//scanner := bufio.NewScanner(codeFile)
+	//lines := make([]string, 0)
+	//for scanner.Scan() {
+	//	lines = append(lines, scanner.Text())
+	//}
+	//if err := scanner.Err(); err != nil {
+	//	panic(err)
+	//}
+	code, err := ioutil.ReadFile(f.Path)
+	if err != nil {
+		panic(err)
+	}
+
+	buf := new(bytes.Buffer)
+	// Highlight(buf, string(code), "go", "html", "monokai")
+	formatter := html.New(
+		html.WithLineNumbers(true),
+		html.LineNumbersInTable(true),
+		html.LinkableLineNumbers(true, "test"),
+	)
+	it, err := lexers.Get("go").Tokenise(nil, string(code))
+	if err != nil {
+		panic(err)
+	}
+	err = formatter.Format(buf, styles.Emacs, it)
+	if err != nil {
+		panic(err)
+	}
+
+	err = r.detailTemplate.Execute(detailFile, fileData{
+		baseData: baseData{
+			Path:     name,
+			Title:    name,
+			Coverage: f.Coverage() * 100},
+		Code: template.HTML(buf.String())})
 	if err != nil {
 		panic(err)
 	}

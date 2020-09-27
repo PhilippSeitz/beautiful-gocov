@@ -1,6 +1,8 @@
 {{define "title"}}{{.Title}}{{end}}
 
 {{define "content"}}
-   <h1>{{.Title}} - {{.Coverage}}%</h1>
-   <p>{{.Path}}</p>
+    <h1>{{.Title}} - {{printf "%.1f"  .Coverage}}%</h1>
+    <p>{{.Path}}</p>
+
+    {{.Code}}
 {{end}}

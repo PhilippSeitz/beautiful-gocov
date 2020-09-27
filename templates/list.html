@@ -1,7 +1,7 @@
 {{define "title"}}{{.Title}}{{end}}
 
 {{define "content"}}
-    <h1>{{.Title}} - {{.Coverage}}%</h1>
+    <h1>{{.Title}} - {{printf "%.1f" .Coverage}}%</h1>
     <p>{{.Path}}</p>
     <table width="700">
         <thead>
@@ -16,14 +16,14 @@
             <tr>
                 <td>Folder</td>
                 <td><a href="{{.Path}}/index.html">{{.Path}}</a></td>
-                <td style="text-align:right">{{.Coverage}}%</td>
+                <td style="text-align:right">{{printf "%.1f" .Coverage}}%</td>
             </tr>
         {{end}}
         {{range .Files}}
             <tr>
                 <td>File</td>
                 <td><a href="{{.Path}}.html">{{.Path}}</a></td>
-                <td style="text-align:right">{{.Coverage}}%</td>
+                <td style="text-align:right">{{printf "%.1f" .Coverage}}%</td>
             </tr>
         {{end}}
         </tbody>
