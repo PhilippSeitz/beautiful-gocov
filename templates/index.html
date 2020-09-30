@@ -6,10 +6,33 @@
 
     <title>{{block "title" .}}{{end}}</title>
     <meta name="description" content="auto generated">
+    <style>
+        body {
+            color: white;
+            background-color: #272822;
+            font-family: sans-serif;
+        }
+
+        a, a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 
 </head>
 
 <body>
-{{block "content" .}}{{end}}
+<div>
+    {{ $p := .Parents}}
+    <div>
+        {{range .Parents}}
+            <a href="{{.Path}}">{{.Name}}</a> /
+        {{ end }}
+    </div>
+    {{block "content" .}}{{end}}
 </body>
 </html>

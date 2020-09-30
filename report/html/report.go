@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -25,9 +26,14 @@ type coverageChild struct {
 }
 
 type baseData struct {
+	Parents  []parent
 	Path     string
 	Coverage float64
 	Title    string
+}
+
+type parent struct {
+	Name, Path string
 }
 
 type data struct {
@@ -45,11 +51,20 @@ type fileData struct {
 const base = "out"
 
 func HTML(f *tree.Folder) error {
-	listTemplate, err := template.ParseFiles("templates/index.html", "templates/list.html")
+	funcs := template.FuncMap{
+		"seq":   func(count int) []int { return make([]int, count) },
+		"len":   func(list []string) int { return len(list) },
+		"minus": func(a, b int) int { return a - b },
+	}
+	listTemplate, err := template.New("index.html").
+		Funcs(funcs).
+		ParseFiles("templates/index.html", "templates/list.html")
 	if err != nil {
 		return err
 	}
-	detailTemplate, err := template.ParseFiles("templates/index.html", "templates/detail.html")
+	detailTemplate, err := template.New("index.html").
+		Funcs(funcs).
+		ParseFiles("templates/index.html", "templates/detail.html")
 	if err != nil {
 		return err
 	}
@@ -72,6 +87,9 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 			Coverage: val.Coverage() * 100,
 		})
 	}
+	sort.Slice(folders, func(i, j int) bool {
+		return folders[i].Coverage > folders[j].Coverage
+	})
 
 	files := make([]coverageChild, 0)
 	for key, val := range f.Files {
@@ -81,11 +99,23 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 		})
 	}
 
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Coverage > files[j].Coverage
+	})
+
+	mappedParents := make([]parent, 0)
+	for i, p := range parents {
+		mappedParents = append(mappedParents, parent{
+			Name: p,
+			Path: strings.Repeat("../", len(parents) - i) + "index.html",
+		})
+	}
 	d := data{
 		baseData: baseData{
 			Path:     path.Join(base, strings.Join(parents, "/"), f.Name),
 			Coverage: f.Coverage() * 100,
 			Title:    f.Name,
+			Parents:  mappedParents,
 		},
 		Folders: folders,
 		Files:   files,
@@ -112,7 +142,6 @@ func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 	}
 
 	buf := new(bytes.Buffer)
-	// Highlight(buf, string(code), "go", "html", "monokai")
 	formatter := html.New(
 		html.WithLineNumbers(true),
 		html.LineNumbersInTable(true),
@@ -128,11 +157,24 @@ func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 	}
 
 	covered, uncovered, partly := convertBlocksToLine(f.Blocks)
+	mappedParents := make([]parent, 0)
+	for i, p := range parents {
+		f := "./"
+		if len(parents) - i > 1 {
+			f = strings.Repeat("../", len(parents) - i - 1)
+		}
+		mappedParents = append(mappedParents, parent{
+			Name: p,
+			Path: f + "index.html",
+		})
+	}
 	err = r.detailTemplate.Execute(detailFile, fileData{
 		baseData: baseData{
 			Path:     name,
 			Title:    name,
-			Coverage: f.Coverage() * 100},
+			Coverage: f.Coverage() * 100,
+			Parents:  mappedParents,
+		},
 		Code:      template.HTML(buf.String()),
 		Covered:   covered,
 		Uncovered: uncovered,
