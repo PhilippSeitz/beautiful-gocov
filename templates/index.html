@@ -8,14 +8,66 @@
     <meta name="description" content="auto generated">
     <style>
         body {
-            color: white;
-            background-color: #272822;
-            font-family: sans-serif;
+            font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+        }
+
+        h1 {
+            font-size: 1.2rem;
         }
 
         a, a:visited {
-            color: white;
+            color: royalblue;
             text-decoration: none;
+        }
+
+        thead > th {
+            font-weight: normal;
+        }
+
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px 16px;
+        }
+
+        th {
+            font-weight: normal;
+            font-size: smaller;
+        }
+
+        td {
+            border: 1px solid;
+        }
+
+        .success {
+            background-color: #4D9221;
+            border-color: #4D9221 !important;
+        }
+
+        .warning {
+            background-color: #f9cd0b;
+            border-color: #f9cd0b !important;
+        }
+
+        .error {
+            background-color: #C21F39;
+            border-color: #C21F39 !important;
+        }
+
+        .success > td {
+            background-color: #E6F5D0;
+        }
+
+        .warning > td {
+            background-color: #fff4c2;
+        }
+
+        .error > td {
+            background-color: #FCE1E5;
         }
 
         a:hover {
@@ -28,11 +80,17 @@
 <body>
 <div>
     {{ $p := .Parents}}
-    <div>
+    <h1>
         {{range .Parents}}
             <a href="{{.Path}}">{{.Name}}</a> /
         {{ end }}
+        <span>{{.Title }}</span>
+    </h1>
+    <div>
+        <strong>{{printf "%.1f" .Coverage}}%</strong> Statements
     </div>
+    <div style="margin: 2rem 0; height: .75rem" class="{{.Class}}"></div>
+
     {{block "content" .}}{{end}}
 </body>
 </html>

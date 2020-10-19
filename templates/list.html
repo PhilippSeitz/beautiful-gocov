@@ -1,27 +1,36 @@
 {{define "title"}}{{.Title}}{{end}}
 
 {{define "content"}}
-    <h1>{{.Title}} - {{printf "%.1f" .Coverage}}%</h1>
+    <style>
+        .chart {
+            border: 1px solid;
+            background-color: white;
+        }
+
+        .chart > .fill {
+            height: .875rem;
+        }
+    </style>
+
     <table width="700">
         <thead>
         <tr>
-            <th style="text-align:left">Type</th>
-            <th style="text-align:left">Path</th>
+            <th colspan="2" style="text-align:left">Path</th>
             <th style="text-align:right">Coverage</th>
         </tr>
         </thead>
         <tbody>
         {{range .Folders}}
-            <tr>
-                <td>Folder</td>
-                <td><a href="{{.Path}}/index.html">./{{.Path}}</a></td>
+            <tr class="{{.Class}}">
+                <td><a href="{{.Path}}/index.html">{{.Path}}</a></td>
+                <td><div class="chart {{.Class}}"><div class="fill {{.Class}}" style="width: {{.Coverage}}%"></div></div></td>
                 <td style="text-align:right">{{printf "%.1f" .Coverage}}%</td>
             </tr>
         {{end}}
         {{range .Files}}
-            <tr>
-                <td>File</td>
-                <td><a href="{{.Path}}.html">./{{.Path}}</a></td>
+            <tr class="{{.Class}}">
+                <td><a href="{{.Path}}.html">{{.Path}}</a></td>
+                <td><div class="chart {{.Class}}"><div class="fill {{.Class}}" style="width: {{.Coverage}}%"></div></div></td>
                 <td style="text-align:right">{{printf "%.1f" .Coverage}}%</td>
             </tr>
         {{end}}

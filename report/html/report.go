@@ -23,6 +23,7 @@ type reporter struct {
 type coverageChild struct {
 	Path     string
 	Coverage float64
+	Class string
 }
 
 type baseData struct {
@@ -30,6 +31,7 @@ type baseData struct {
 	Path     string
 	Coverage float64
 	Title    string
+	Class string
 }
 
 type parent struct {
@@ -79,12 +81,23 @@ func HTML(f *tree.Folder) error {
 	return nil
 }
 
+func covToClass(coverage float64) string {
+	if coverage >= 0.8 {
+		return "success"
+	} else if coverage >= 0.5 {
+		return "warning"
+	} else {
+		return "error"
+	}
+}
+
 func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 	folders := make([]coverageChild, 0)
 	for key, val := range f.Folders {
 		folders = append(folders, coverageChild{
 			Path:     key,
 			Coverage: val.Coverage() * 100,
+			Class: covToClass(val.Coverage()),
 		})
 	}
 	sort.Slice(folders, func(i, j int) bool {
@@ -96,6 +109,7 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 		files = append(files, coverageChild{
 			Path:     key,
 			Coverage: val.Coverage() * 100,
+			Class: covToClass(val.Coverage()),
 		})
 	}
 
@@ -116,6 +130,7 @@ func (r *reporter) renderFolder(f *tree.Folder, parents []string) {
 			Coverage: f.Coverage() * 100,
 			Title:    f.Name,
 			Parents:  mappedParents,
+			Class: covToClass(f.Coverage()),
 		},
 		Folders: folders,
 		Files:   files,
@@ -151,7 +166,7 @@ func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 	if err != nil {
 		panic(err)
 	}
-	err = formatter.Format(buf, styles.Monokai, it)
+	err = formatter.Format(buf, styles.Xcode, it)
 	if err != nil {
 		panic(err)
 	}
@@ -174,6 +189,7 @@ func (r *reporter) renderFile(f tree.File, name string, parents []string) {
 			Title:    name,
 			Coverage: f.Coverage() * 100,
 			Parents:  mappedParents,
+			Class: covToClass(f.Coverage()),
 		},
 		Code:      template.HTML(buf.String()),
 		Covered:   covered,

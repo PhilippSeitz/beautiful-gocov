@@ -3,29 +3,24 @@
 {{define "content"}}
     <style>
         {{range $i, $val := .Covered}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
-            border-right: 8px solid green;
+            border-right: 8px solid #E6F5D0;
         }
 
         {{range $i, $val := .Uncovered}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
-            border-right: 8px solid red;
+            border-right: 8px solid #FCE1E5;
         }
 
         {{range $i, $val := .Partly}}{{if gt $i 0}},{{end}}#line{{$val}}{{end}} {
-            border-right: 8px solid yellow;
+            border-right: 8px solid #fff4c2;
         }
 
         tbody > tr > td:first-child {
             padding-right: 15px !important;
         }
-
-        body {
-            background-color: #272822;
-            color: white;
-        }
     </style>
-    <h1>{{.Title}} - {{printf "%.1f"  .Coverage}}%</h1>
 
-    <div style="width:900px; margin: 0 auto">
+
+    <div>
         {{.Code}}
     </div>
 {{end}}
